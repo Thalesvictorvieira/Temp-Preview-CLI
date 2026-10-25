@@ -63,7 +63,7 @@ Previsão: Ensolarado
 Clone o repositório:
 
 ```bash
-git clone https://github.com/SEU-USUARIO/skymio-cli.git
+git clone https://github.com/Thalesvictorvieira/skymio-cli.git
 ```
 
 Entre na pasta do projeto:

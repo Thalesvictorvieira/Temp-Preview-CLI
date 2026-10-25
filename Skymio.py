@@ -2,8 +2,16 @@ from pathlib import Path
 URL_PREVISAO = "https://api.weatherapi.com/v1/forecast.json"
 import requests
 from datetime import datetime
-import locale
-locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+
+DIAS_SEMANA = {
+    1: "Domingo",
+    2: "Segunda-feira",
+    3: "Terça-feira",
+    4: "Quarta-feira",
+    5: "Quinta-feira",
+    6: "Sexta-feira",
+    7: "Sábado",
+}
 
 arquivo = Path("SaveApiKey.txt")
 
@@ -19,6 +27,20 @@ else:
     arquivo.write_text(CHAVEAPI)
 
 sair = ""
+
+def mensagem_probabilidade_chuva(chance):
+    chance = int(chance)
+    if chance > 65:
+        return "É melhor levar um guarda-chuva."
+    elif chance >= 50:
+        return "Pode ser que chova."
+    elif chance >= 30:
+        return "Vai ter algumas nuvens no céu."
+    elif chance >= 10:
+        return "Não vai chover."
+    else:
+        return "Será um dia ensolarado e quase sem nuvens, leve um protetor solar."
+
 def previsao_atual(cidade):
 
     parametros = {
@@ -35,18 +57,33 @@ def previsao_atual(cidade):
     print("\nCidade:", dados["location"]["name"])
     print("Temperatura:", atual["temp_c"], "°C")
     print("Condição:", atual["condition"]["text"])
-def previsao_futuro(cidade,dias):
+    if "forecast" in dados and dados["forecast"]["forecastday"]:
+        chance_chuva = dados["forecast"]["forecastday"][0]["day"].get("daily_chance_of_rain", 0)
+        print(f"Probabilidade de chuva: {chance_chuva}% - {mensagem_probabilidade_chuva(chance_chuva)}")
+def previsao_futuro(cidade, numero_dia):
     #Define os parametros para enviar para a API
     paramentros = {
         "key": CHAVEAPI,
         "q": cidade,
         "lang": "pt",
-        "days": dias+1
+        "days": 3
     }
     #Manda a requisição para a API e obtém os dados
     resposta = requests.get(URL_PREVISAO, params=paramentros)
     dados = resposta.json()
-    dia = dados["forecast"]["forecastday"][dias]
+    dia = next(
+        (
+            previsao
+            for previsao in dados["forecast"]["forecastday"]
+            if datetime.strptime(previsao["date"], "%Y-%m-%d").isoweekday() % 7 + 1
+            == numero_dia
+        ),
+        None,
+    )
+
+    if dia is None:
+        print(f"Não há previsão para {DIAS_SEMANA[numero_dia]} nos próximos 3 dias.")
+        return
     
     #Tratramento de exibição dos dados
     
@@ -61,27 +98,15 @@ def previsao_futuro(cidade,dias):
     print("Data:", data_br)
 
     #Exibe os dias da semana formatados para o padrão brasileiro ex (Quarta-feira)
-    dia_semana = data.strftime("%A")      # nome do dia
-    print("Dia:", dia_semana.capitalize())
+    dia_semana = data.isoweekday() % 7 + 1
+    print("Dia:", DIAS_SEMANA[dia_semana])
 
     #Exibe a temperatura média e a condição do dia da previsão
     print("Temperatura média:", dia["day"]["avgtemp_c"], "°C")
     print("Previsão:", dia["day"]["condition"]["text"])
+    chance_chuva = dia["day"].get("daily_chance_of_rain", 0)
+    print(f"Probabilidade de chuva: {chance_chuva}% - {mensagem_probabilidade_chuva(chance_chuva)}")
 
-    match Opcao:
-        case "1":
-            cidade = input("Digite o nome da cidade para obter a previsão do tempo atual: ")
-            previsao_atual(cidade)
-            
-        case "2":
-            cidade = input("Digite o nome da cidade para obter a previsão do tempo para os próximos dias: ")
-            dia = int(input("Digite o dia para obter a previsão do tempo: "))
-            if dia > 2 or dia < 0:
-                print("Lamento mas a Aplicação só tem previsão para os próximos 3 dias," \
-                "por favor escolha um número entre 0 e 2.")
-                
-            previsao_futuro(cidade,dia)
-        
 while sair not in ["s","n"]:
 
     Opcao = input("\nQual das opções abaixo você deseja utilizar?\n" \
@@ -104,10 +129,13 @@ while sair not in ["s","n"]:
         case "2":
             Opcao = ""
             cidade = input("Digite o nome da cidade para obter a previsão do tempo para os próximos dias: ")
-            diaescolhido = int(input("Digite o dia para obter a previsão do tempo: "))
+            diaescolhido = int(input(
+                "Digite o número do dia da semana (1 - Domingo, 2 - Segunda, "
+                "3 - Terça, 4 - Quarta, 5 - Quinta, 6 - Sexta, 7 - Sábado): "
+            ))
             
-            while diaescolhido not in [0,1,2]:
-                diaescolhido = int(input("Escolha 0, 1 ou 2: "))
+            while diaescolhido not in DIAS_SEMANA:
+                diaescolhido = int(input("Escolha um número entre 1 e 7: "))
             previsao_futuro(cidade,diaescolhido)
 
         case "3":

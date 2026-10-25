@@ -1,3 +1,7 @@
 SaveApiKey.txt
 APP.py
 teste.py
+.venv/
+__pycache__/
+*.pyc
+

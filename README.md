@@ -63,7 +63,7 @@ Previsão: Ensolarado
 Clone o repositório:
 
 ```bash
-git clone https://github.com/Thalesvictorvieira/skymio-cli.git
+git clone https://github.com/Thalesvictorvieira/Temp-Preview-CLI
 ```
 
 Entre na pasta do projeto:
